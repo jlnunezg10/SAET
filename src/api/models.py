@@ -68,9 +68,6 @@ class Permit(db.Model):
     start_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     end_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
-    # Relacion con PersonalInfo
-    personal_info_id: Mapped[int] = mapped_column(Integer, ForeignKey('personal_info.id'), nullable=False)
-    personal_info: Mapped['PersonalInfo'] = relationship('PersonalInfo', back_populates='permits')
 
     # Relacion con PersonalInfo
     personal_info_id: Mapped[int] = mapped_column(Integer, ForeignKey('personal_info.id'), nullable=False)
@@ -83,6 +80,10 @@ class Permit(db.Model):
     # Relaciones
     user_requester: Mapped['User'] = relationship('User', back_populates='requests_made', foreign_keys=[requester_id])
     user_approver: Mapped['User'] = relationship('User', back_populates='approvals_made', foreign_keys=[approver_id])
+
+    # Relacion con Permit 
+    permit_id: Mapped[int] = mapped_column(Integer, ForeignKey('permits.id'))
+    permit: Mapped['Permit'] = relationship('Permit', back_populates='permits')
 
     def __repr__(self):
         return f'<Permit {self.type} from {self.start_date} to {self.end_date}>'
@@ -120,6 +121,10 @@ class Station(db.Model):
     # Dependencias con Market
     market_id: Mapped[int] = mapped_column(Integer, ForeignKey('market.id'))
     market: relationship('Market', back_populates='station')
+
+    # Dependencia con Permit
+    permit_id: Mapped[int] = mapped_column(Integer, ForeignKey('permits.id'))
+    permit: relationship('Permit', back_populates='station')
 
     def __repr__(self):
         return f'<Station {self.name}>'
