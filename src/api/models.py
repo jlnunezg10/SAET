@@ -81,9 +81,6 @@ class Permit(db.Model):
     user_requester: Mapped['User'] = relationship('User', back_populates='requests_made', foreign_keys=[requester_id])
     user_approver: Mapped['User'] = relationship('User', back_populates='approvals_made', foreign_keys=[approver_id])
 
-    # Relacion con Permit 
-    permit_id: Mapped[int] = mapped_column(Integer, ForeignKey('permits.id'))
-    permit: Mapped['Permit'] = relationship('Permit', back_populates='permits')
 
     def __repr__(self):
         return f'<Permit {self.type} from {self.start_date} to {self.end_date}>'
@@ -138,7 +135,7 @@ class Station(db.Model):
     
 
 class Region(db.Model):
-    __tablename__: 'region'
+    __tablename__= 'region'
 
     id: Mapped[int] = mapped_column(primary_key=True)
     region: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
@@ -172,8 +169,8 @@ class ContactStation(db.Model):
     phone: Mapped[str] = mapped_column(String(20), nullable=False)
 
     # Dependencia con Contact Station
-    contact_station_id: Mapped[int] = mapped_column(Integer, ForeignKey('contact_stations.id'))
-    contact_station = relationship('ContactStation', back_populates='contacts')
+    contact_station_id: Mapped[int] = mapped_column(Integer, ForeignKey('contactstations.id'))
+    contact_station = relationship('ContactStation', back_populates='contactstation')
 
     def __repr__(self):
         return f'<Contact {self.name}>'
@@ -194,7 +191,7 @@ class Market(db.Model):
 
     # Dependencias con Station
     #station_id: Mapped[int] = mapped_column(Integer, ForeignKey('station.id'))
-    station: relationship('Station', back_populates='market')
+    station_id: relationship('Station', back_populates='market')
 
     # Dependencias con Region
     region_id: Mapped[int] = mapped_column(Integer, ForeignKey('region.id'))
