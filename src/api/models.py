@@ -57,6 +57,22 @@ class Department(db.Model):
             "id": self.id,
             "name": self.name,
         }
+
+
+# Tabla intermedia entre PersonalInfo y Permit para manejar la relación muchos a muchos
+personal_info_permits = db.Table(
+    'personal_info_permits',
+    db.Model.metadata,
+    db.Column('personal_info_id', db.Integer, db.ForeignKey('personal_info.id'), primary_key=True),
+    db.Column('permit_id', db.Integer, db.ForeignKey('permits.id'), primary_key=True)
+)
+
+# Tabla intermedia para la relación N:N entre Permisos y Station
+permit_station = db.Table('permit_station',
+    db.Column('permit_id', db.Integer, db.ForeignKey('permits.id'), primary_key=True),
+    db.Column('station_id', db.Integer, db.ForeignKey('stations.id'), primary_key=True)
+)
+
     
 class Permit(db.Model):
 
@@ -84,6 +100,12 @@ class Permit(db.Model):
     user_requester: Mapped['User'] = relationship('User', back_populates='requests_made', foreign_keys=[requester_id])
     user_approver: Mapped['User'] = relationship('User', back_populates='approvals_made', foreign_keys=[approver_id])
 
+    # Relación N:N con Station
+    stations: Mapped[list['Station']] = relationship(
+        'Station',
+        secondary=permit_station,
+        back_populates='permits'
+    )
 
     def __repr__(self):
         return f'<Permit {self.type} from {self.start_date} to {self.end_date}>'
@@ -98,6 +120,7 @@ class Permit(db.Model):
         "end_date": self.end_date.isoformat(),
         "requester_id": self.requester_id,
         "approver_id": self.approver_id,
+        "stations": [s.name for s in self.stations],
         # Serializamos datos básicos de las personas para evitar el bucle
         "people": [
             {
@@ -116,9 +139,7 @@ class Station(db.Model):
     address: Mapped[str] = mapped_column(String(200), nullable=False)
     
     # Dependencia con Contact Station
-    contact_station_id: Mapped[int] = mapped_column(Integer, ForeignKey('contact_stations.id'))
-    contact_station: Mapped['ContactStation']= relationship('ContactStation', back_populates='stations')
-
+    contacts: Mapped[list['ContactStation']] = relationship('ContactStation', back_populates='station')
     # Dependencias con Region
     region_id: Mapped[int] = mapped_column(Integer, ForeignKey('region.id'))
     region: Mapped['Region'] = relationship('Region', back_populates='station')
@@ -128,8 +149,11 @@ class Station(db.Model):
     market: Mapped['Market'] = relationship('Market', back_populates='station')
 
     # Dependencia con Permit
-    permit_id: Mapped[int] = mapped_column(Integer, ForeignKey('permits.id'))
-    permit: Mapped['Permit'] = relationship('Permit', back_populates='station')
+    permits: Mapped[list['Permit']] = relationship(
+        'Permit',
+        secondary=permit_station,
+        back_populates='stations'
+    )
 
     def __repr__(self):
         return f'<Station {self.name}>'
@@ -138,6 +162,11 @@ class Station(db.Model):
         return {
             "id": self.id,
             "name": self.name,
+            "contacts":self.contacts,
+            "region":self.region,
+            'market': self.market,
+            "permits": [p.id for p in self.permits]
+
 
         }
     
@@ -149,11 +178,9 @@ class Region(db.Model):
     region: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
 
     # Dependencias con Station
-    #station_id: Mapped[int] = mapped_column(Integer, ForeignKey('station.id'))
     station: Mapped['Station'] = relationship('Station', back_populates='region')
 
     # Dependencias con Market
-    #market_id: Mapped[int] = mapped_column(Integer, ForeignKey('market.id'))
     market: Mapped['Market'] = relationship('Market', back_populates='region')
 
 
@@ -177,8 +204,9 @@ class ContactStation(db.Model):
     phone: Mapped[str] = mapped_column(String(20), nullable=False)
 
     # Dependencia con Contact Station
-    contact_station_id: Mapped[int] = mapped_column(Integer, ForeignKey('contactstations.id'))
-    contact_station: Mapped['ContactStation'] = relationship('ContactStation', back_populates='contactstation')
+    station_id: Mapped[int] = mapped_column(Integer, ForeignKey('stations.id'))
+    station: Mapped['Station'] = relationship('Station', back_populates='contacts')
+
 
     def __repr__(self):
         return f'<Contact {self.name}>'
@@ -189,17 +217,18 @@ class ContactStation(db.Model):
             "name": self.name,
             "email": self.email,
             "phone": self.phone,
-            "contact_station_id": self.contact_station_id,
+            "station_id": self.station_id,
+
         }
 
 class Market(db.Model):
-    __tablename__ = 'markets'
+    __tablename__ = 'market'
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
 
     # Dependencias con Station
     #station_id: Mapped[int] = mapped_column(Integer, ForeignKey('station.id'))
-    station_id: Mapped['Station'] = relationship('Station', back_populates='market')
+    station: Mapped['Station'] = relationship('Station', back_populates='market')
 
     # Dependencias con Region
     region_id: Mapped[int] = mapped_column(Integer, ForeignKey('region.id'))
@@ -225,7 +254,6 @@ class PersonalInfo(db.Model):
 
 
     contractor: Mapped['Contractor'] = relationship('Contractor', back_populates='personal_info', uselist=False)
-    contractor_id: Mapped[int] = mapped_column(Integer, ForeignKey('contractor.id'), nullable=False)
 
     # Relacion con Permit
     permits: Mapped[list['Permit']] = relationship(
@@ -242,7 +270,7 @@ class PersonalInfo(db.Model):
         "full_name": self.full_name,
         "national_id": self.national_id,
         "is_allow": self.is_allow,
-        "contractor_id": self.contractor_id,
+        "contractor": self.contractor,
         
         "permits": [
             {
@@ -262,7 +290,7 @@ class Contractor(db.Model):
 
     # Relacion con PersonalInfo
     personal_info_id: Mapped[int] = mapped_column(Integer, ForeignKey('personal_info.id'), nullable=False)
-    personal_info: Mapped['PersonalInfo'] = relationship('PersonalInfo', back_populates='contractor_id', uselist=False)
+    personal_info: Mapped['PersonalInfo'] = relationship('PersonalInfo', back_populates='contractor', uselist=False)
 
     def __repr__(self):
         return f'<Contractor {self.company_name}>'
@@ -276,14 +304,4 @@ class Contractor(db.Model):
             "personal_info_id": self.personal_info_id,
         }
     
-
-# Tabla intermedia entre PersonalInfo y Permit para manejar la relación muchos a muchos
-personal_info_permits = db.Table(
-    'personal_info_permits',
-    db.Model.metadata,
-    db.Column('personal_info_id', db.Integer, db.ForeignKey('personal_info.id'), primary_key=True),
-    db.Column('permit_id', db.Integer, db.ForeignKey('permits.id'), primary_key=True)
-)
-
-
 
