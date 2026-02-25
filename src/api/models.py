@@ -13,7 +13,7 @@ class User(db.Model):
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(128), nullable=False)
-    employee_id: Mapped[str] = mapped_column(String(7), unique=True, nullable=False)
+    user: Mapped[str] = mapped_column(String(7), unique=True, nullable=False)
     role: Mapped[str] = mapped_column(String(128), nullable=False)
 
     # Permisos que el usuario ha solicitado
@@ -37,7 +37,7 @@ class User(db.Model):
             "id": self.id,
             "email": self.email,
             "name": self.name,
-            "employee_id": self.employee_id,
+            "user": self.user,
             "role":self.role,
 
             # do not serialize the password, its a security breach
