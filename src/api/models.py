@@ -14,6 +14,7 @@ class User(db.Model):
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(128), nullable=False)
     employee_id: Mapped[str] = mapped_column(String(7), unique=True, nullable=False)
+    role: Mapped[str] = mapped_column(String(128), nullable=False)
 
     # Permisos que el usuario ha solicitado
     requests_made: Mapped[list["Permit"]] = relationship('Permit', back_populates='user_requester', foreign_keys='Permit.requester_id')
@@ -37,6 +38,7 @@ class User(db.Model):
             "email": self.email,
             "name": self.name,
             "employee_id": self.employee_id,
+            "role":self.role,
 
             # do not serialize the password, its a security breach
         }
