@@ -11,6 +11,8 @@ from datetime import timedelta, timezone, datetime
 
 api = Blueprint('api', __name__)
 
+bcrypt = Bcrypt()
+
 # Allow CORS requests to this API
 CORS(api)
 
