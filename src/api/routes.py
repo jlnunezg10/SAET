@@ -41,6 +41,8 @@ def create_user():
         role = data.get("role")
         email = data.get("email")
         
+        departement_id = data.get("departement_id", 1)
+        
         if not name or not user or not password or not role:
             return jsonify({'msg':'Datos incompletos'}), 402
         
@@ -51,21 +53,22 @@ def create_user():
             return (
                 jsonify(
                     {
-                        "msg": "El email utilizado ya esta registrado, por favor utilizar otro"
+                        "msg": "El usuario utilizado ya esta registrado, por favor utilizar otro"
                     }
                 ),
                 400,
             )
         password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
 
-        new_user = User(name=name, password=password_hash,user=user,email=email, role=role)
+        new_user = User(name=name, password=password_hash,user=user,email=email, role=role,departement_id = departement_id)
+        
         
         db.session.add(new_user)
         db.session.flush()
         
         db.session.commit()
 
-        return jsonify(new_user.serialize()), 201
+        return jsonify({"msg":"Usuario creado con exito","new_user":new_user.serialize()}), 201
     
         
         
@@ -88,7 +91,7 @@ def login():
         if not user or not password:
             return jsonify({'msg':"Faltan los datos de user o password"}), 400
         
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter_by(user=user).first()
         
         if not user:
             return jsonify({'msg':'Usuario no encontrado'})
